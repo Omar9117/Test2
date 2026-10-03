@@ -1,0 +1,330 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Solar System</title>
+<style>
+  :root{
+    --bg:#05060d;
+    --bg2:#0b0e1c;
+    --text:#e7e6f0;
+    --dim:#8a8ba3;
+    --line:#242840;
+    --accent:#f4d58d;
+    padding-top: env(safe-area-inset-top,0px);
+    padding-bottom: env(safe-area-inset-bottom,0px);
+    box-sizing:border-box;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:radial-gradient(ellipse at 50% -10%, #141830 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Georgia', 'Iowan Old Style', serif;
+    overflow-x:hidden;
+    min-height:100%;
+  }
+  .stars{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, #fff 0, transparent 100%),
+      radial-gradient(1px 1px at 80% 10%, #fff 0, transparent 100%),
+      radial-gradient(1px 1px at 60% 70%, #fff 0, transparent 100%),
+      radial-gradient(1px 1px at 30% 85%, #fff 0, transparent 100%),
+      radial-gradient(1px 1px at 90% 55%, #fff 0, transparent 100%),
+      radial-gradient(1px 1px at 45% 40%, #fff 0, transparent 100%),
+      radial-gradient(1px 1px at 15% 60%, #fff 0, transparent 100%),
+      radial-gradient(1px 1px at 70% 90%, #fff 0, transparent 100%);
+    opacity:.5;
+  }
+  header{
+    position:relative; z-index:1;
+    padding:2.4rem 1.5rem 1rem;
+    text-align:center;
+  }
+  header h1{
+    font-size:clamp(1.8rem,4vw,2.6rem);
+    font-weight:400;
+    letter-spacing:.02em;
+    margin:0 0 .4rem;
+  }
+  header p{
+    color:var(--dim);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:.95rem;
+    margin:0;
+  }
+  main{
+    position:relative; z-index:1;
+    display:flex;
+    align-items:center;
+    gap:0;
+    min-height:60vh;
+    padding:2rem 1rem 3rem;
+    transition:all .6s ease;
+  }
+  #orbitRow{
+    display:flex;
+    align-items:center;
+    gap:clamp(14px,2.4vw,34px);
+    padding:0 1rem;
+    overflow-x:auto;
+    overflow-y:hidden;
+    flex:1;
+    transition:all .6s cubic-bezier(.2,.7,.3,1);
+    scrollbar-width:thin;
+  }
+  main.focused #orbitRow{
+    flex:none;
+    width:min(30vw,220px);
+    gap:0;
+    overflow:hidden;
+  }
+  .sun{
+    flex:0 0 auto;
+    width:clamp(46px,7vw,72px);
+    height:clamp(46px,7vw,72px);
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff3c4, #f7b733 45%, #d1660a 100%);
+    box-shadow:0 0 40px 8px rgba(247,183,51,.35);
+  }
+  .planet-btn{
+    flex:0 0 auto;
+    background:none;
+    border:none;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.5rem;
+    cursor:pointer;
+    color:inherit;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    transition:opacity .45s ease, transform .45s ease, width .5s ease, margin .5s ease;
+  }
+  .planet-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:4px; }
+  .planet-btn .body{
+    border-radius:50%;
+    transition:transform .35s ease, box-shadow .35s ease;
+  }
+  .planet-btn:hover .body{ transform:scale(1.08); }
+  .planet-btn .label{
+    font-size:.78rem;
+    color:var(--dim);
+    letter-spacing:.02em;
+  }
+  main.focused .planet-btn:not(.selected){
+    opacity:0;
+    width:0;
+    margin:0;
+    pointer-events:none;
+  }
+  main.focused .planet-btn.selected .body{
+    transform:scale(1.5);
+  }
+  main.focused .planet-btn.selected .label{
+    color:var(--text);
+    font-size:.9rem;
+  }
+  main.focused .sun{ opacity:.35; transform:scale(.8); }
+
+  #panel{
+    flex:0;
+    width:0;
+    opacity:0;
+    overflow:hidden;
+    transition:all .55s cubic-bezier(.2,.7,.3,1);
+  }
+  main.focused #panel{
+    flex:1;
+    width:auto;
+    opacity:1;
+    padding-left:clamp(1rem,3vw,2.5rem);
+  }
+  #panel .inner{
+    max-width:520px;
+    border-left:1px solid var(--line);
+    padding-left:1.6rem;
+  }
+  #panel h2{
+    font-size:clamp(1.6rem,3.4vw,2.2rem);
+    font-weight:400;
+    margin:0 0 .2rem;
+    color:var(--pcolor,var(--text));
+  }
+  #panel .tagline{
+    color:var(--dim);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:.95rem;
+    margin:0 0 1.4rem;
+    font-style:italic;
+  }
+  .stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1rem 1.6rem;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    margin-bottom:1.4rem;
+  }
+  .stat dt{ color:var(--dim); font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.15rem;}
+  .stat dd{ margin:0; font-size:1.05rem; }
+  #panel .fact{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:.92rem;
+    line-height:1.6;
+    color:var(--text);
+    border-top:1px solid var(--line);
+    padding-top:1rem;
+  }
+  .backbtn{
+    margin-top:1.6rem;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--dim);
+    padding:.5rem 1rem;
+    border-radius:100px;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:.82rem;
+    cursor:pointer;
+    transition:border-color .2s, color .2s;
+  }
+  .backbtn:hover{ border-color:var(--dim); color:var(--text); }
+  .hint{
+    text-align:center;
+    color:var(--dim);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-size:.8rem;
+    position:relative; z-index:1;
+    padding-bottom:2rem;
+  }
+  @media (max-width:720px){
+    main{ flex-direction:column; }
+    main.focused #orbitRow{ width:100%; }
+    #panel .inner{ border-left:none; border-top:1px solid var(--line); padding-left:0; padding-top:1.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<header>
+  <h1>The Solar System</h1>
+  <p>Click a planet to hear it and read what it's made of</p>
+</header>
+
+<main id="main">
+  <div id="orbitRow">
+    <div class="sun" aria-hidden="true"></div>
+  </div>
+  <div id="panel"></div>
+</main>
+<p class="hint" id="hint">Tap any planet above</p>
+
+<script>
+const planets = [
+  {name:"Mercury", color:"#b6b0a8", size:16, tagline:"The swift, scorched wanderer",
+   diameter:"4,879 km", temp:"167°C avg", distance:"57.9M km", day:"59 Earth days", moons:"0",
+   fact:"Mercury has almost no atmosphere to trap heat, so its surface swings from 430°C in daylight to -180°C at night — the widest temperature range of any planet.",
+   freq:660, wave:"square"},
+  {name:"Venus", color:"#e8c98a", size:20, tagline:"Earth's hostile twin",
+   diameter:"12,104 km", temp:"464°C avg", distance:"108.2M km", day:"243 Earth days", moons:"0",
+   fact:"Venus spins backwards and so slowly that its day is longer than its year. Thick CO2 clouds trap heat, making it the hottest planet despite being farther from the Sun than Mercury.",
+   freq:220, wave:"sine"},
+  {name:"Earth", color:"#4d8fd6", size:21, tagline:"The only known garden",
+   diameter:"12,742 km", temp:"15°C avg", distance:"149.6M km", day:"24 hours", moons:"1",
+   fact:"Earth is the only planet not named after a god, and the only one confirmed to host liquid surface water and life.",
+   freq:330, wave:"sine"},
+  {name:"Mars", color:"#c1553c", size:17, tagline:"The rusted desert world",
+   diameter:"6,779 km", temp:"-63°C avg", distance:"227.9M km", day:"24h 37m", moons:"2",
+   fact:"Mars is home to Olympus Mons, the largest volcano in the solar system — roughly three times the height of Mount Everest.",
+   freq:392, wave:"triangle"},
+  {name:"Jupiter", color:"#d2a679", size:44, tagline:"The gas giant king",
+   diameter:"139,820 km", temp:"-108°C avg", distance:"778.5M km", day:"9h 56m", moons:"95",
+   fact:"Jupiter's Great Red Spot is a storm wider than Earth that has raged for at least 190 years.",
+   freq:110, wave:"sawtooth"},
+  {name:"Saturn", color:"#e3c78a", size:40, tagline:"The ringed jewel",
+   diameter:"116,460 km", temp:"-139°C avg", distance:"1.43B km", day:"10h 42m", moons:"146",
+   fact:"Saturn is so light for its size that it would float in water — the only planet in the solar system that could.",
+   freq:130, wave:"sawtooth"},
+  {name:"Uranus", color:"#9fd8d8", size:30, tagline:"The tilted ice giant",
+   diameter:"50,724 km", temp:"-197°C avg", distance:"2.87B km", day:"17h 14m", moons:"28",
+   fact:"Uranus rotates on its side, likely tipped over by an ancient collision, so its poles take turns facing the Sun for 42-year seasons.",
+   freq:180, wave:"triangle"},
+  {name:"Neptune", color:"#5b6fd6", size:29, tagline:"The windswept outermost",
+   diameter:"49,244 km", temp:"-201°C avg", distance:"4.5B km", day:"16h 6m", moons:"16",
+   fact:"Neptune has the fastest winds in the solar system, clocked at over 2,000 km/h — faster than the speed of sound on Earth.",
+   freq:150, wave:"triangle"}
+];
+
+const row = document.getElementById('orbitRow');
+const mainEl = document.getElementById('main');
+const panel = document.getElementById('panel');
+const hint = document.getElementById('hint');
+
+planets.forEach((p, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'planet-btn';
+  btn.setAttribute('aria-label', p.name);
+  btn.dataset.index = i;
+  btn.innerHTML = `<span class="body" style="width:${p.size}px;height:${p.size}px;background:${p.color};box-shadow:0 0 ${p.size*0.6}px 1px ${p.color}55;"></span><span class="label">${p.name}</span>`;
+  btn.addEventListener('click', () => selectPlanet(i));
+  row.appendChild(btn);
+});
+
+let audioCtx = null;
+function playTone(freq, wave){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = wave;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(freq*0.75,20), now+0.9);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now+0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now+1.0);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now+1.05);
+  }catch(e){ /* audio unavailable, fail silently */ }
+}
+
+function selectPlanet(i){
+  const p = planets[i];
+  mainEl.classList.add('focused');
+  hint.style.opacity = '0';
+  [...row.children].forEach(el => el.classList && el.classList.remove('selected'));
+  const btn = row.querySelector(`[data-index="${i}"]`);
+  if(btn) btn.classList.add('selected');
+
+  playTone(p.freq, p.wave);
+
+  panel.innerHTML = `
+    <div class="inner" style="--pcolor:${p.color}">
+      <h2>${p.name}</h2>
+      <p class="tagline">${p.tagline}</p>
+      <dl class="stats">
+        <div class="stat"><dt>Diameter</dt><dd>${p.diameter}</dd></div>
+        <div class="stat"><dt>Avg. temperature</dt><dd>${p.temp}</dd></div>
+        <div class="stat"><dt>Distance from Sun</dt><dd>${p.distance}</dd></div>
+        <div class="stat"><dt>Day length</dt><dd>${p.day}</dd></div>
+        <div class="stat"><dt>Moons</dt><dd>${p.moons}</dd></div>
+      </dl>
+      <p class="fact">${p.fact}</p>
+      <button class="backbtn" id="backBtn">← Back to the system</button>
+    </div>
+  `;
+  document.getElementById('backBtn').addEventListener('click', reset);
+}
+
+function reset(){
+  mainEl.classList.remove('focused');
+  hint.style.opacity = '1';
+  [...row.children].forEach(el => el.classList && el.classList.remove('selected'));
+  panel.innerHTML = '';
+}
+</script>
+</body>
+</html>
